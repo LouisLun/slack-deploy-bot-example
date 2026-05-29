@@ -9,7 +9,7 @@ on:
         default: latest
 
 env:
-  IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/slack-deploy-bot:${{ inputs.image_tag }}
+  IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/slack-deploy-bot:${{ inputs.image_tag }}
 
 jobs:
   deploy:
@@ -41,5 +41,6 @@ jobs:
             SLACK_BOT_TOKEN=${{ secrets.SLACK_BOT_TOKEN }}
             GITHUB_CLIENT_ID=${{ secrets.GITHUB_CLIENT_ID }}
             GITHUB_CLIENT_SECRET=${{ secrets.GITHUB_CLIENT_SECRET }}
+            DEPLOY_CONFIG_JSON=${{ secrets.DEPLOY_CONFIG_JSON }}
             GCS_BUCKET_NAME=${{ vars.GCS_BUCKET_NAME }}
             GCS_CONFIG_FILE_PATH=${{ vars.GCS_CONFIG_FILE_PATH }}

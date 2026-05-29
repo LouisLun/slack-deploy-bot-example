@@ -14,7 +14,7 @@ Copy `.github/workflows/deploy-cloudrun.yml` into your slack-deploy-bot repo and
 |---|---|
 | `WIF_PROVIDER` | Workload Identity Federation provider resource name |
 | `WIF_SERVICE_ACCOUNT` | Service account email used for deployment |
-| `DOCKERHUB_USERNAME` | Docker Hub username |
+| `DEPLOY_CONFIG_JSON` | (optional) Full deploy config JSON string — overrides GCS when set |
 | `SLACK_SIGNING_SECRET` | Slack App signing secret |
 | `SLACK_BOT_TOKEN` | Slack Bot User OAuth Token (`xoxb-…`) |
 | `GITHUB_CLIENT_ID` | GitHub OAuth App client ID |
@@ -28,6 +28,7 @@ Copy `.github/workflows/deploy-cloudrun.yml` into your slack-deploy-bot repo and
 | `CLOUD_RUN_SERVICE` | `slack-deploy-bot` | Cloud Run service name |
 | `GCS_BUCKET_NAME` | `my-bucket` | GCS bucket storing the deploy config |
 | `GCS_CONFIG_FILE_PATH` | `deploy-config.json` | Config file path inside the bucket |
+| `DOCKERHUB_USERNAME` | `louislun` | Docker Hub username (public image, no auth needed) |
 
 ## How to Obtain Each Secret
 
@@ -63,7 +64,7 @@ Copy `.github/workflows/deploy-cloudrun.yml` into your slack-deploy-bot repo and
 
 ### DOCKERHUB_USERNAME (Docker Hub)
 
-Your Docker Hub account username. Log in at [hub.docker.com](https://hub.docker.com) and copy the username shown in the top-right corner.
+The image `DOCKERHUB_USERNAME/slack-deploy-bot` is a public image — no login required. Set this variable to the Docker Hub username that owns the image.
 
 ### SLACK_SIGNING_SECRET & SLACK_BOT_TOKEN (Slack App)
 
