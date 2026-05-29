@@ -1,6 +1,6 @@
 # slack-deploy-bot-example
 
-GitHub Actions workflow for deploying [slack-deploy-bot](https://github.com/LouisLun/slack-deploy-bot) to Google Cloud Run.
+GitHub Actions workflow for deploying [slack-deploy-bot](https://hub.docker.com/repository/docker/coffeesouffle/slack-deploy-bot) to Google Cloud Run.
 
 ## Usage
 
