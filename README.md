@@ -115,7 +115,43 @@ Set as `DEPLOY_CONFIG_JSON` secret (inline JSON) or upload to GCS. Full format:
 - `groups` — used by `/deploy <group-name>`, defines step order and parallel projects
 - `projects` — used by `/hotfix <project-name>`, flat map of project name → repo + workflows
 
-## Workflow
+## Deploy Flow (`/deploy`)
+
+```
+/deploy production
+  │
+  ├─ Step 1 (all projects concurrent)
+  │   ├─ restful:  release-cd.yml ─────────────► wait ──► release
+  │   ├─ wms:      release-cd.yml ──► wait ──┐
+  │   │            notify.yml     ──► wait ──┴─► release
+  │   └─ console:  release-cd.yml ─────────────► wait ──► release
+  │
+  └─ Step 2 (starts only after Step 1 fully completes)
+      └─ website:  release-cd.yml ─────────────► wait ──► release
+```
+
+- Projects **within the same step** are triggered in parallel.
+- Workflows **within the same project** are also triggered in parallel (all fire simultaneously, wait for all to complete).
+- A failed workflow aborts the release for that project and blocks the next step.
+- Projects with no open PR labelled `production` (case-insensitive) are **skipped** and reported in Slack.
+
+## Hotfix Flow (`/hotfix`)
+
+```
+/hotfix <project-name>
+```
+
+1. Looks up `<project-name>` in `config.projects`.
+2. Finds the most recently updated open PR labelled `hotfix` (case-insensitive).
+3. Triggers all of that project's workflows in parallel, waits for all to complete.
+4. Creates a GitHub Release on success.
+
+Example:
+```
+/hotfix wms
+```
+
+## Cloud Run Deploy Workflow
 
 Triggered manually via **GitHub → Actions → Deploy to Cloud Run → Run workflow**.
 
