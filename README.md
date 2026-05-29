@@ -29,6 +29,55 @@ Copy `.github/workflows/deploy-cloudrun.yml` into your slack-deploy-bot repo and
 | `GCS_BUCKET_NAME` | `my-bucket` | GCS bucket storing the deploy config |
 | `GCS_CONFIG_FILE_PATH` | `deploy-config.json` | Config file path inside the bucket |
 
+## How to Obtain Each Secret
+
+### WIF_PROVIDER & WIF_SERVICE_ACCOUNT (Google Cloud)
+
+1. Create a service account:
+   ```bash
+   gcloud iam service-accounts create github-actions \
+     --display-name="GitHub Actions"
+   ```
+2. Grant it the `Cloud Run Developer` and `Storage Object Viewer` roles on your project.
+3. Enable Workload Identity Federation:
+   ```bash
+   gcloud iam workload-identity-pools create github \
+     --location="global" \
+     --display-name="GitHub Actions Pool"
+
+   gcloud iam workload-identity-pools providers create-oidc github-provider \
+     --location="global" \
+     --workload-identity-pool="github" \
+     --issuer-uri="https://token.actions.githubusercontent.com" \
+     --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository"
+   ```
+4. Bind the service account to your repo:
+   ```bash
+   gcloud iam service-accounts add-iam-policy-binding \
+     github-actions@PROJECT_ID.iam.gserviceaccount.com \
+     --role="roles/iam.workloadIdentityUser" \
+     --member="principalSet://iam.googleapis.com/projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github/attribute.repository/OWNER/REPO"
+   ```
+5. `WIF_PROVIDER` → full provider resource name, e.g. `projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github/providers/github-provider`
+6. `WIF_SERVICE_ACCOUNT` → service account email, e.g. `github-actions@PROJECT_ID.iam.gserviceaccount.com`
+
+### DOCKERHUB_USERNAME (Docker Hub)
+
+Your Docker Hub account username. Log in at [hub.docker.com](https://hub.docker.com) and copy the username shown in the top-right corner.
+
+### SLACK_SIGNING_SECRET & SLACK_BOT_TOKEN (Slack App)
+
+1. Go to [api.slack.com/apps](https://api.slack.com/apps) → select your app (or create one).
+2. `SLACK_SIGNING_SECRET` → **Basic Information** → App Credentials → Signing Secret.
+3. `SLACK_BOT_TOKEN` → **OAuth & Permissions** → OAuth Tokens → Bot User OAuth Token (`xoxb-…`).
+   - Required scopes: `chat:write`, `commands` (add more as needed by slack-deploy-bot).
+
+### GITHUB_CLIENT_ID & GITHUB_CLIENT_SECRET (GitHub OAuth App)
+
+1. Go to **GitHub → Settings → Developer settings → OAuth Apps → New OAuth App**.
+2. Set **Authorization callback URL** to your Cloud Run service URL + `/auth/github/callback`.
+3. After creating: `GITHUB_CLIENT_ID` → Client ID, `GITHUB_CLIENT_SECRET` → generate and copy a Client Secret.
+
 ## Workflow
 
 Triggered manually via **GitHub → Actions → Deploy to Cloud Run → Run workflow**.
