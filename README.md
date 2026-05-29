@@ -28,7 +28,6 @@ Use this repo as a GitHub template to create your own repo, then configure the r
 | `CLOUD_RUN_SERVICE` | `slack-deploy-bot` | Cloud Run service name |
 | `GCS_BUCKET_NAME` | `my-bucket` | GCS bucket storing the deploy config |
 | `GCS_CONFIG_FILE_PATH` | `deploy-config.json` | Config file path inside the bucket |
-| `DOCKERHUB_USERNAME` | `coffeesouffle` | Docker Hub username (public image, no auth needed) |
 
 ## How to Obtain Each Secret
 
@@ -61,10 +60,6 @@ Use this repo as a GitHub template to create your own repo, then configure the r
    ```
 5. `WIF_PROVIDER` → full provider resource name, e.g. `projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github/providers/github-provider`
 6. `WIF_SERVICE_ACCOUNT` → service account email, e.g. `github-actions@PROJECT_ID.iam.gserviceaccount.com`
-
-### DOCKERHUB_USERNAME (Docker Hub)
-
-The image `DOCKERHUB_USERNAME/slack-deploy-bot` is a public image — no login required. Set this variable to the Docker Hub username that owns the image.
 
 ### SLACK_SIGNING_SECRET & SLACK_BOT_TOKEN (Slack App)
 

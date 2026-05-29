@@ -9,7 +9,7 @@ on:
         default: latest
 
 env:
-  IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/slack-deploy-bot:${{ inputs.image_tag }}
+  IMAGE: coffeesouffle/slack-deploy-bot:${{ inputs.image_tag }}
 
 jobs:
   deploy:
