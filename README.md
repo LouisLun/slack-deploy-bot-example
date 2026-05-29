@@ -74,6 +74,66 @@ Use this repo as a GitHub template to create your own repo, then configure the r
 2. Set **Authorization callback URL** to your Cloud Run service URL + `/auth/github/callback`.
 3. After creating: `GITHUB_CLIENT_ID` → Client ID, `GITHUB_CLIENT_SECRET` → generate and copy a Client Secret.
 
+## Setup
+
+### 1. Fork or use this template
+
+Click **Use this template** on GitHub to create your own repo.
+
+### 2. Prepare deploy-config.json
+
+Either upload to GCS (recommended) or set as a secret (see format below).
+
+**Option A — GCS:**
+```bash
+# Create bucket
+gcloud storage buckets create gs://MY_BUCKET --location=asia-east1
+
+# Upload config
+gcloud storage cp deploy-config.json gs://MY_BUCKET/deploy-config.json
+```
+
+Grant the service account read access:
+```bash
+gcloud storage buckets add-iam-policy-binding gs://MY_BUCKET \
+  --member="serviceAccount:github-actions@PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/storage.objectViewer"
+```
+
+**Option B — Secret:**
+Set `DEPLOY_CONFIG_JSON` secret to the full JSON string. GCS variables are ignored when this secret is set.
+
+### 3. Set GitHub Secrets
+
+Go to **repo → Settings → Secrets and variables → Actions → Secrets**:
+
+| Secret | Value |
+|---|---|
+| `WIF_PROVIDER` | See [WIF setup](#wif_provider--wif_service_account-google-cloud) |
+| `WIF_SERVICE_ACCOUNT` | See [WIF setup](#wif_provider--wif_service_account-google-cloud) |
+| `SLACK_SIGNING_SECRET` | From Slack App Basic Information |
+| `SLACK_BOT_TOKEN` | From Slack App OAuth & Permissions |
+| `GITHUB_CLIENT_ID` | From GitHub OAuth App |
+| `GITHUB_CLIENT_SECRET` | From GitHub OAuth App |
+| `DEPLOY_CONFIG_JSON` | (optional) Full config JSON string |
+
+### 4. Set GitHub Variables
+
+Go to **repo → Settings → Secrets and variables → Actions → Variables**:
+
+| Variable | Value |
+|---|---|
+| `GCP_REGION` | e.g. `asia-east1` |
+| `CLOUD_RUN_SERVICE` | e.g. `slack-deploy-bot` |
+| `GCS_BUCKET_NAME` | GCS bucket name from step 2 |
+| `GCS_CONFIG_FILE_PATH` | e.g. `deploy-config.json` |
+
+### 5. Deploy
+
+Go to **Actions → Deploy to Cloud Run → Run workflow**, optionally specify an image tag (default: `latest`).
+
+The workflow authenticates via WIF, then deploys the public Docker image to Cloud Run with the configured environment variables.
+
 ## deploy-config.json Format
 
 Set as `DEPLOY_CONFIG_JSON` secret (inline JSON) or upload to GCS. Full format:
