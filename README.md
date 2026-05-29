@@ -28,7 +28,7 @@ Use this repo as a GitHub template to create your own repo, then configure the r
 | `CLOUD_RUN_SERVICE` | `slack-deploy-bot` | Cloud Run service name |
 | `GCS_BUCKET_NAME` | `my-bucket` | GCS bucket storing the deploy config |
 | `GCS_CONFIG_FILE_PATH` | `deploy-config.json` | Config file path inside the bucket |
-| `DOCKERHUB_USERNAME` | `louislun` | Docker Hub username (public image, no auth needed) |
+| `DOCKERHUB_USERNAME` | `coffeesouffle` | Docker Hub username (public image, no auth needed) |
 
 ## How to Obtain Each Secret
 
