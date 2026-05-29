@@ -63,10 +63,33 @@ Use this repo as a GitHub template to create your own repo, then configure the r
 
 ### SLACK_SIGNING_SECRET & SLACK_BOT_TOKEN (Slack App)
 
-1. Go to [api.slack.com/apps](https://api.slack.com/apps) → select your app (or create one).
-2. `SLACK_SIGNING_SECRET` → **Basic Information** → App Credentials → Signing Secret.
-3. `SLACK_BOT_TOKEN` → **OAuth & Permissions** → OAuth Tokens → Bot User OAuth Token (`xoxb-…`).
-   - Required scopes: `chat:write`, `commands` (add more as needed by slack-deploy-bot).
+#### Create the App
+
+1. Go to [api.slack.com/apps](https://api.slack.com/apps) → **Create New App** → **From scratch**.
+2. Name it (e.g. `deploy-bot`) and pick your workspace.
+
+#### Configure OAuth Scopes
+
+3. **OAuth & Permissions** → **Bot Token Scopes** → Add:
+   - `chat:write` — post messages
+   - `commands` — receive slash commands
+
+#### Add Slash Commands
+
+4. **Slash Commands** → **Create New Command** for each:
+
+   | Command | Request URL | Description |
+   |---|---|---|
+   | `/deploy` | `https://YOUR_CLOUD_RUN_URL/slack/events` | Deploy a release group |
+   | `/hotfix` | `https://YOUR_CLOUD_RUN_URL/slack/events` | Hotfix a single project |
+
+   > Replace `YOUR_CLOUD_RUN_URL` after deploying (step 5 in Setup).
+
+#### Install & Get Tokens
+
+5. **Install App** → **Install to Workspace** → Authorize.
+6. `SLACK_SIGNING_SECRET` → **Basic Information** → App Credentials → Signing Secret.
+7. `SLACK_BOT_TOKEN` → **OAuth & Permissions** → Bot User OAuth Token (`xoxb-…`).
 
 ### GITHUB_CLIENT_ID & GITHUB_CLIENT_SECRET (GitHub OAuth App)
 
