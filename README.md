@@ -1,10 +1,10 @@
 # slack-deploy-bot-example
 
-GitHub Actions workflow example for deploying [slack-deploy-bot](https://github.com/LouisLun/slack-deploy-bot) to Google Cloud Run.
+GitHub Actions workflow for deploying [slack-deploy-bot](https://github.com/LouisLun/slack-deploy-bot) to Google Cloud Run.
 
 ## Usage
 
-Copy `.github/workflows/deploy-cloudrun.yml` into your slack-deploy-bot repo and configure the required secrets and variables.
+Use this repo as a GitHub template to create your own repo, then configure the required secrets and variables.
 
 ## Required Secrets & Variables
 
@@ -78,6 +78,42 @@ The image `DOCKERHUB_USERNAME/slack-deploy-bot` is a public image — no login r
 1. Go to **GitHub → Settings → Developer settings → OAuth Apps → New OAuth App**.
 2. Set **Authorization callback URL** to your Cloud Run service URL + `/auth/github/callback`.
 3. After creating: `GITHUB_CLIENT_ID` → Client ID, `GITHUB_CLIENT_SECRET` → generate and copy a Client Secret.
+
+## deploy-config.json Format
+
+Set as `DEPLOY_CONFIG_JSON` secret (inline JSON) or upload to GCS. Full format:
+
+```json
+{
+  "groups": {
+    "production": [
+      {
+        "step": 1,
+        "projects": [
+          { "name": "restful",  "repo": "myorg/restful",  "workflows": ["release-cd.yml"] },
+          { "name": "wms",      "repo": "myorg/wms",      "workflows": ["release-cd.yml", "notify.yml"] },
+          { "name": "console",  "repo": "myorg/console",  "workflows": ["release-cd.yml"] }
+        ]
+      },
+      {
+        "step": 2,
+        "projects": [
+          { "name": "website",  "repo": "myorg/website",  "workflows": ["release-cd.yml"] }
+        ]
+      }
+    ]
+  },
+  "projects": {
+    "restful":  { "repo": "myorg/restful",  "workflows": ["release-cd.yml"] },
+    "wms":      { "repo": "myorg/wms",      "workflows": ["release-cd.yml", "notify.yml"] },
+    "console":  { "repo": "myorg/console",  "workflows": ["release-cd.yml"] },
+    "website":  { "repo": "myorg/website",  "workflows": ["release-cd.yml"] }
+  }
+}
+```
+
+- `groups` — used by `/deploy <group-name>`, defines step order and parallel projects
+- `projects` — used by `/hotfix <project-name>`, flat map of project name → repo + workflows
 
 ## Workflow
 
