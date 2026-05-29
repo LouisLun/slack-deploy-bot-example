@@ -39,7 +39,7 @@ Use this repo as a GitHub template to create your own repo, then configure the r
    gcloud iam service-accounts create github-actions \
      --display-name="GitHub Actions"
    ```
-2. Grant it the `Cloud Run Developer` and `Storage Object Viewer` roles on your project.
+2. Grant it the `Cloud Run Developer` role on your project. Also grant `Storage Object Viewer` if using the GCS config provider.
 3. Enable Workload Identity Federation:
    ```bash
    gcloud iam workload-identity-pools create github \
