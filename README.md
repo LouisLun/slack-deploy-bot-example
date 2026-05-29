@@ -89,8 +89,10 @@ gcloud projects add-iam-policy-binding PROJECT_ID \
   --role="roles/run.admin"
 
 # Required to act as the Cloud Run runtime service account
+# Replace RUNTIME_SA with your Cloud Run runtime service account
+# (default: PROJECT_NUMBER-compute@developer.gserviceaccount.com)
 gcloud iam service-accounts add-iam-policy-binding \
-  github-actions@PROJECT_ID.iam.gserviceaccount.com \
+  RUNTIME_SA@PROJECT_ID.iam.gserviceaccount.com \
   --member="serviceAccount:github-actions@PROJECT_ID.iam.gserviceaccount.com" \
   --role="roles/iam.serviceAccountUser"
 
@@ -160,8 +162,8 @@ Go to **repo → Settings → Secrets and variables → Actions**.
 |---|---|
 | `GCP_REGION` | e.g. `asia-east1` |
 | `CLOUD_RUN_SERVICE` | e.g. `slack-deploy-bot` |
-| `GCS_BUCKET_NAME` | From step 5 Option A |
-| `GCS_CONFIG_FILE_PATH` | e.g. `deploy-config.json` |
+| `GCS_BUCKET_NAME` | From step 5 Option A (not needed for Option B) |
+| `GCS_CONFIG_FILE_PATH` | e.g. `deploy-config.json` (not needed for Option B) |
 
 ### 7. Deploy
 
