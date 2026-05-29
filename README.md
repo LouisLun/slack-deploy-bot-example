@@ -93,9 +93,27 @@ Use this repo as a GitHub template to create your own repo, then configure the r
 
 ### GITHUB_CLIENT_ID & GITHUB_CLIENT_SECRET (GitHub OAuth App)
 
+#### Create the OAuth App
+
 1. Go to **GitHub → Settings → Developer settings → OAuth Apps → New OAuth App**.
-2. Set **Authorization callback URL** to your Cloud Run service URL + `/auth/github/callback`.
-3. After creating: `GITHUB_CLIENT_ID` → Client ID, `GITHUB_CLIENT_SECRET` → generate and copy a Client Secret.
+2. Fill in the fields:
+
+   | Field | Value |
+   |---|---|
+   | Application name | `slack-deploy-bot` (or any name) |
+   | Homepage URL | your Cloud Run service URL |
+   | Authorization callback URL | `https://YOUR_CLOUD_RUN_URL/auth/github/callback` |
+
+   > Replace `YOUR_CLOUD_RUN_URL` after deploying (step 5 in Setup).
+
+#### Get Credentials
+
+3. After creating: `GITHUB_CLIENT_ID` → **Client ID** (shown on app page).
+4. `GITHUB_CLIENT_SECRET` → click **Generate a new client secret** → copy immediately (shown once only).
+
+#### Required GitHub Token Permissions
+
+The bot authenticates users via GitHub OAuth to trigger workflows. The authenticated user must have **write access** to the target repos so their token can dispatch workflow runs.
 
 ## Setup
 
