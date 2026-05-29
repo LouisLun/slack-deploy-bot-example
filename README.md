@@ -2,10 +2,6 @@
 
 GitHub Actions workflow for deploying [slack-deploy-bot](https://hub.docker.com/repository/docker/coffeesouffle/slack-deploy-bot) to Google Cloud Run.
 
-## Usage
-
-Use this repo as a GitHub template to create your own repo, then configure the required secrets and variables.
-
 ## Required Secrets & Variables
 
 ### Secrets
@@ -29,52 +25,24 @@ Use this repo as a GitHub template to create your own repo, then configure the r
 | `GCS_BUCKET_NAME` | `my-bucket` | GCS bucket storing the deploy config |
 | `GCS_CONFIG_FILE_PATH` | `deploy-config.json` | Config file path inside the bucket |
 
-## How to Obtain Each Secret
+## Setup
 
-### WIF_PROVIDER & WIF_SERVICE_ACCOUNT (Google Cloud)
+### 1. Use this template
 
-1. Create a service account:
-   ```bash
-   gcloud iam service-accounts create github-actions \
-     --display-name="GitHub Actions"
-   ```
-2. Grant it the `Cloud Run Developer` role on your project. Also grant `Storage Object Viewer` if using the GCS config provider.
-3. Enable Workload Identity Federation:
-   ```bash
-   gcloud iam workload-identity-pools create github \
-     --location="global" \
-     --display-name="GitHub Actions Pool"
+Click **Use this template** on GitHub to create your own repo.
 
-   gcloud iam workload-identity-pools providers create-oidc github-provider \
-     --location="global" \
-     --workload-identity-pool="github" \
-     --issuer-uri="https://token.actions.githubusercontent.com" \
-     --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository"
-   ```
-4. Bind the service account to your repo:
-   ```bash
-   gcloud iam service-accounts add-iam-policy-binding \
-     github-actions@PROJECT_ID.iam.gserviceaccount.com \
-     --role="roles/iam.workloadIdentityUser" \
-     --member="principalSet://iam.googleapis.com/projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github/attribute.repository/OWNER/REPO"
-   ```
-5. `WIF_PROVIDER` → full provider resource name, e.g. `projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github/providers/github-provider`
-6. `WIF_SERVICE_ACCOUNT` → service account email, e.g. `github-actions@PROJECT_ID.iam.gserviceaccount.com`
-
-### SLACK_SIGNING_SECRET & SLACK_BOT_TOKEN (Slack App)
-
-#### Create the App
+### 2. Create Slack App
 
 1. Go to [api.slack.com/apps](https://api.slack.com/apps) → **Create New App** → **From scratch**.
 2. Name it (e.g. `deploy-bot`) and pick your workspace.
 
-#### Configure OAuth Scopes
+**Configure OAuth Scopes:**
 
 3. **OAuth & Permissions** → **Bot Token Scopes** → Add:
    - `chat:write` — post messages
    - `commands` — receive slash commands
 
-#### Add Slash Commands
+**Add Slash Commands** (use placeholder URL for now, update in step 8):
 
 4. **Slash Commands** → **Create New Command** for each:
 
@@ -83,97 +51,135 @@ Use this repo as a GitHub template to create your own repo, then configure the r
    | `/deploy` | `https://YOUR_CLOUD_RUN_URL/slack/events` | Deploy a release group |
    | `/hotfix` | `https://YOUR_CLOUD_RUN_URL/slack/events` | Hotfix a single project |
 
-   > Replace `YOUR_CLOUD_RUN_URL` after deploying (step 5 in Setup).
-
-#### Install & Get Tokens
+**Install & get tokens:**
 
 5. **Install App** → **Install to Workspace** → Authorize.
-6. `SLACK_SIGNING_SECRET` → **Basic Information** → App Credentials → Signing Secret.
-7. `SLACK_BOT_TOKEN` → **OAuth & Permissions** → Bot User OAuth Token (`xoxb-…`).
+6. Copy `SLACK_SIGNING_SECRET` → **Basic Information** → App Credentials → Signing Secret.
+7. Copy `SLACK_BOT_TOKEN` → **OAuth & Permissions** → Bot User OAuth Token (`xoxb-…`).
 
-### GITHUB_CLIENT_ID & GITHUB_CLIENT_SECRET (GitHub OAuth App)
-
-#### Create the OAuth App
+### 3. Create GitHub OAuth App
 
 1. Go to **GitHub → Settings → Developer settings → OAuth Apps → New OAuth App**.
-2. Fill in the fields:
+2. Fill in the fields (use placeholder URL for now, update in step 8):
 
    | Field | Value |
    |---|---|
    | Application name | `slack-deploy-bot` (or any name) |
-   | Homepage URL | your Cloud Run service URL |
+   | Homepage URL | `https://YOUR_CLOUD_RUN_URL` |
    | Authorization callback URL | `https://YOUR_CLOUD_RUN_URL/auth/github/callback` |
 
-   > Replace `YOUR_CLOUD_RUN_URL` after deploying (step 5 in Setup).
+3. Copy `GITHUB_CLIENT_ID` → **Client ID** (shown on app page).
+4. Copy `GITHUB_CLIENT_SECRET` → click **Generate a new client secret** → copy immediately (shown once only).
 
-#### Get Credentials
+> The bot authenticates users via GitHub OAuth to trigger workflows. The authenticated user must have **write access** to the target repos.
 
-3. After creating: `GITHUB_CLIENT_ID` → **Client ID** (shown on app page).
-4. `GITHUB_CLIENT_SECRET` → click **Generate a new client secret** → copy immediately (shown once only).
+### 4. Set up Google Cloud
 
-#### Required GitHub Token Permissions
-
-The bot authenticates users via GitHub OAuth to trigger workflows. The authenticated user must have **write access** to the target repos so their token can dispatch workflow runs.
-
-## Setup
-
-### 1. Fork or use this template
-
-Click **Use this template** on GitHub to create your own repo.
-
-### 2. Prepare deploy-config.json
-
-Either upload to GCS (recommended) or set as a secret (see format below).
-
-**Option A — GCS:**
+**Create a service account:**
 ```bash
-# Create bucket
-gcloud storage buckets create gs://MY_BUCKET --location=asia-east1
-
-# Upload config
-gcloud storage cp deploy-config.json gs://MY_BUCKET/deploy-config.json
+gcloud iam service-accounts create github-actions \
+  --display-name="GitHub Actions"
 ```
 
-Grant the service account read access:
+**Grant roles:**
 ```bash
-gcloud storage buckets add-iam-policy-binding gs://MY_BUCKET \
+# Required to deploy and update Cloud Run services
+gcloud projects add-iam-policy-binding PROJECT_ID \
+  --member="serviceAccount:github-actions@PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/run.admin"
+
+# Required to act as the Cloud Run runtime service account
+gcloud iam service-accounts add-iam-policy-binding \
+  github-actions@PROJECT_ID.iam.gserviceaccount.com \
+  --member="serviceAccount:github-actions@PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/iam.serviceAccountUser"
+
+# Required if using GCS config (Option A in step 5)
+gcloud projects add-iam-policy-binding PROJECT_ID \
   --member="serviceAccount:github-actions@PROJECT_ID.iam.gserviceaccount.com" \
   --role="roles/storage.objectViewer"
 ```
 
+**Set up Workload Identity Federation:**
+```bash
+gcloud iam workload-identity-pools create github \
+  --location="global" \
+  --display-name="GitHub Actions Pool"
+
+gcloud iam workload-identity-pools providers create-oidc github-provider \
+  --location="global" \
+  --workload-identity-pool="github" \
+  --issuer-uri="https://token.actions.githubusercontent.com" \
+  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository"
+```
+
+**Bind the service account to your repo:**
+```bash
+gcloud iam service-accounts add-iam-policy-binding \
+  github-actions@PROJECT_ID.iam.gserviceaccount.com \
+  --role="roles/iam.workloadIdentityUser" \
+  --member="principalSet://iam.googleapis.com/projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github/attribute.repository/OWNER/REPO"
+```
+
+**Get values for secrets:**
+- `WIF_PROVIDER` → `projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github/providers/github-provider`
+- `WIF_SERVICE_ACCOUNT` → `github-actions@PROJECT_ID.iam.gserviceaccount.com`
+
+### 5. Prepare deploy-config.json
+
+**Option A — GCS (recommended):**
+```bash
+gcloud storage buckets create gs://MY_BUCKET --location=asia-east1
+gcloud storage cp deploy-config.json gs://MY_BUCKET/deploy-config.json
+```
+
 **Option B — Secret:**
-Set `DEPLOY_CONFIG_JSON` secret to the full JSON string. GCS variables are ignored when this secret is set.
+Set `DEPLOY_CONFIG_JSON` to the full JSON string. GCS variables are ignored when this secret is set.
 
-### 3. Set GitHub Secrets
+See [deploy-config.json Format](#deploy-configjson-format) for the full schema.
 
-Go to **repo → Settings → Secrets and variables → Actions → Secrets**:
+### 6. Set GitHub Secrets & Variables
+
+Go to **repo → Settings → Secrets and variables → Actions**.
+
+**Secrets:**
 
 | Secret | Value |
 |---|---|
-| `WIF_PROVIDER` | See [WIF setup](#wif_provider--wif_service_account-google-cloud) |
-| `WIF_SERVICE_ACCOUNT` | See [WIF setup](#wif_provider--wif_service_account-google-cloud) |
-| `SLACK_SIGNING_SECRET` | From Slack App Basic Information |
-| `SLACK_BOT_TOKEN` | From Slack App OAuth & Permissions |
-| `GITHUB_CLIENT_ID` | From GitHub OAuth App |
-| `GITHUB_CLIENT_SECRET` | From GitHub OAuth App |
-| `DEPLOY_CONFIG_JSON` | (optional) Full config JSON string |
+| `WIF_PROVIDER` | From step 4 |
+| `WIF_SERVICE_ACCOUNT` | From step 4 |
+| `SLACK_SIGNING_SECRET` | From step 2 |
+| `SLACK_BOT_TOKEN` | From step 2 |
+| `GITHUB_CLIENT_ID` | From step 3 |
+| `GITHUB_CLIENT_SECRET` | From step 3 |
+| `DEPLOY_CONFIG_JSON` | (optional) From step 5 Option B |
 
-### 4. Set GitHub Variables
-
-Go to **repo → Settings → Secrets and variables → Actions → Variables**:
+**Variables:**
 
 | Variable | Value |
 |---|---|
 | `GCP_REGION` | e.g. `asia-east1` |
 | `CLOUD_RUN_SERVICE` | e.g. `slack-deploy-bot` |
-| `GCS_BUCKET_NAME` | GCS bucket name from step 2 |
+| `GCS_BUCKET_NAME` | From step 5 Option A |
 | `GCS_CONFIG_FILE_PATH` | e.g. `deploy-config.json` |
 
-### 5. Deploy
+### 7. Deploy
 
 Go to **Actions → Deploy to Cloud Run → Run workflow**, optionally specify an image tag (default: `latest`).
 
-The workflow authenticates via WIF, then deploys the public Docker image to Cloud Run with the configured environment variables.
+After the workflow completes, get the Cloud Run service URL:
+```bash
+gcloud run services describe $CLOUD_RUN_SERVICE \
+  --region=$GCP_REGION \
+  --format='value(status.url)'
+```
+
+### 8. Update Slack & GitHub OAuth URLs
+
+Replace `YOUR_CLOUD_RUN_URL` placeholders from steps 2 and 3 with the actual URL:
+
+- **Slack** → [api.slack.com/apps](https://api.slack.com/apps) → your app → **Slash Commands** → edit each command → update Request URL.
+- **GitHub OAuth App** → **Settings → Developer settings → OAuth Apps** → your app → update Homepage URL and Authorization callback URL.
 
 ## deploy-config.json Format
 
