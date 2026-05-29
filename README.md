@@ -13,8 +13,8 @@ GitHub Actions workflow for deploying [slack-deploy-bot](https://hub.docker.com/
 | `DEPLOY_CONFIG_JSON` | (optional) Full deploy config JSON string — overrides GCS when set |
 | `SLACK_SIGNING_SECRET` | Slack App signing secret |
 | `SLACK_BOT_TOKEN` | Slack Bot User OAuth Token (`xoxb-…`) |
-| `GITHUB_CLIENT_ID` | GitHub OAuth App client ID |
-| `GITHUB_CLIENT_SECRET` | GitHub OAuth App client secret |
+| `GH_CLIENT_ID` | GitHub OAuth App client ID |
+| `GH_CLIENT_SECRET` | GitHub OAuth App client secret |
 
 ### Variables
 
@@ -68,8 +68,8 @@ Click **Use this template** on GitHub to create your own repo.
    | Homepage URL | `https://YOUR_CLOUD_RUN_URL` |
    | Authorization callback URL | `https://YOUR_CLOUD_RUN_URL/auth/github/callback` |
 
-3. Copy `GITHUB_CLIENT_ID` → **Client ID** (shown on app page).
-4. Copy `GITHUB_CLIENT_SECRET` → click **Generate a new client secret** → copy immediately (shown once only).
+3. Copy `GH_CLIENT_ID` → **Client ID** (shown on app page).
+4. Copy `GH_CLIENT_SECRET` → click **Generate a new client secret** → copy immediately (shown once only).
 
 > The bot authenticates users via GitHub OAuth to trigger workflows. The authenticated user must have **write access** to the target repos.
 
@@ -150,8 +150,8 @@ Go to **repo → Settings → Secrets and variables → Actions**.
 | `WIF_SERVICE_ACCOUNT` | From step 4 |
 | `SLACK_SIGNING_SECRET` | From step 2 |
 | `SLACK_BOT_TOKEN` | From step 2 |
-| `GITHUB_CLIENT_ID` | From step 3 |
-| `GITHUB_CLIENT_SECRET` | From step 3 |
+| `GH_CLIENT_ID` | From step 3 |
+| `GH_CLIENT_SECRET` | From step 3 |
 | `DEPLOY_CONFIG_JSON` | (optional) From step 5 Option B |
 
 **Variables:**

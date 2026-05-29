@@ -39,8 +39,8 @@ jobs:
           env_vars: |
             SLACK_SIGNING_SECRET=${{ secrets.SLACK_SIGNING_SECRET }}
             SLACK_BOT_TOKEN=${{ secrets.SLACK_BOT_TOKEN }}
-            GITHUB_CLIENT_ID=${{ secrets.GITHUB_CLIENT_ID }}
-            GITHUB_CLIENT_SECRET=${{ secrets.GITHUB_CLIENT_SECRET }}
+            GITHUB_CLIENT_ID=${{ secrets.GH_CLIENT_ID }}
+            GITHUB_CLIENT_SECRET=${{ secrets.GH_CLIENT_SECRET }}
             DEPLOY_CONFIG_JSON=${{ secrets.DEPLOY_CONFIG_JSON }}
             GCS_BUCKET_NAME=${{ vars.GCS_BUCKET_NAME }}
             GCS_CONFIG_FILE_PATH=${{ vars.GCS_CONFIG_FILE_PATH }}
