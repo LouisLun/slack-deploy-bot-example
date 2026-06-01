@@ -25,23 +25,6 @@ jobs:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
-      - name: Prepare env vars file
-        run: |
-          cat > /tmp/cloudrun.env << 'ENVEOF'
-          SLACK_SIGNING_SECRET=${{ secrets.SLACK_SIGNING_SECRET }}
-          SLACK_BOT_TOKEN=${{ secrets.SLACK_BOT_TOKEN }}
-          GITHUB_CLIENT_ID=${{ secrets.GH_CLIENT_ID }}
-          GITHUB_CLIENT_SECRET=${{ secrets.GH_CLIENT_SECRET }}
-          GCS_BUCKET_NAME=${{ vars.GCS_BUCKET_NAME }}
-          GCS_CONFIG_FILE_PATH=${{ vars.GCS_CONFIG_FILE_PATH }}
-          ENVEOF
-          # Write DEPLOY_CONFIG_JSON separately to preserve JSON special characters
-          if [ -n "$DEPLOY_CONFIG_JSON" ]; then
-            printf 'DEPLOY_CONFIG_JSON=%s\n' "$DEPLOY_CONFIG_JSON" >> /tmp/cloudrun.env
-          fi
-        env:
-          DEPLOY_CONFIG_JSON: ${{ secrets.DEPLOY_CONFIG_JSON }}
-
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v3
         with:
@@ -53,4 +36,22 @@ jobs:
             --min-instances=0
             --max-instances=3
             --concurrency=10
-          env_vars_file: /tmp/cloudrun.env
+          env_vars: |
+            SLACK_SIGNING_SECRET=${{ secrets.SLACK_SIGNING_SECRET }}
+            SLACK_BOT_TOKEN=${{ secrets.SLACK_BOT_TOKEN }}
+            GITHUB_CLIENT_ID=${{ secrets.GH_CLIENT_ID }}
+            GITHUB_CLIENT_SECRET=${{ secrets.GH_CLIENT_SECRET }}
+            GCS_BUCKET_NAME=${{ vars.GCS_BUCKET_NAME }}
+            GCS_CONFIG_FILE_PATH=${{ vars.GCS_CONFIG_FILE_PATH }}
+
+      - name: Set DEPLOY_CONFIG_JSON
+        run: |
+          if [ -n "$DEPLOY_CONFIG_JSON" ]; then
+            gcloud run services update "$SERVICE" \
+              --region="$REGION" \
+              --update-env-vars="^||^DEPLOY_CONFIG_JSON=$DEPLOY_CONFIG_JSON"
+          fi
+        env:
+          SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
+          REGION: ${{ vars.GCP_REGION }}
+          DEPLOY_CONFIG_JSON: ${{ secrets.DEPLOY_CONFIG_JSON }}

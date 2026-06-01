@@ -48,8 +48,8 @@ Click **Use this template** on GitHub to create your own repo.
 
    | Command | Request URL | Description |
    |---|---|---|
-   | `/deploy` | `https://YOUR_CLOUD_RUN_URL/slack/events` | Deploy a release group |
-   | `/hotfix` | `https://YOUR_CLOUD_RUN_URL/slack/events` | Hotfix a single project |
+   | `/deploy` | `https://YOUR_CLOUD_RUN_URL/slack/events` | Deploy a release group — usage: `/deploy <group> <release title>` |
+   | `/hotfix` | `https://YOUR_CLOUD_RUN_URL/slack/events` | Hotfix a single project — usage: `/hotfix <project> <release title>` |
 
 **Install & get tokens:**
 
@@ -196,7 +196,8 @@ Set as `DEPLOY_CONFIG_JSON` secret (inline JSON) or upload to GCS. Full format:
         "projects": [
           { "name": "restful",  "repo": "myorg/restful",  "workflows": ["release-cd.yml"] },
           { "name": "wms",      "repo": "myorg/wms",      "workflows": ["release-cd.yml", "notify.yml"] },
-          { "name": "console",  "repo": "myorg/console",  "workflows": ["release-cd.yml"] }
+          { "name": "console",  "repo": "myorg/console",  "workflows": ["release-cd.yml"] },
+          { "name": "frontend", "repo": "myorg/frontend", "mergeOnly": true }
         ]
       },
       {
@@ -211,48 +212,56 @@ Set as `DEPLOY_CONFIG_JSON` secret (inline JSON) or upload to GCS. Full format:
     "restful":  { "repo": "myorg/restful",  "workflows": ["release-cd.yml"] },
     "wms":      { "repo": "myorg/wms",      "workflows": ["release-cd.yml", "notify.yml"] },
     "console":  { "repo": "myorg/console",  "workflows": ["release-cd.yml"] },
-    "website":  { "repo": "myorg/website",  "workflows": ["release-cd.yml"] }
+    "website":  { "repo": "myorg/website",  "workflows": ["release-cd.yml"] },
+    "frontend": { "repo": "myorg/frontend", "mergeOnly": true }
   }
 }
 ```
 
-- `groups` — used by `/deploy <group-name>`, defines step order and parallel projects
-- `projects` — used by `/hotfix <project-name>`, flat map of project name → repo + workflows
+- `groups` — used by `/deploy <group-name> <release title>`, defines step order and parallel projects
+- `projects` — used by `/hotfix <project-name> <release title>`, flat map of project name → repo + workflows
+- `mergeOnly: true` — merge the PR and stop; no tag, no workflow trigger, no GitHub Release. Use for projects that auto-deploy on merge (e.g. Cloudflare Pages)
 
 ## Deploy Flow (`/deploy`)
 
 ```
-/deploy production
+/deploy production Fix checkout flow
   │
   ├─ Step 1 (all projects concurrent)
-  │   ├─ restful:  release-cd.yml ─────────────► wait ──► release
+  │   ├─ restful:  release-cd.yml ─────────────► wait ──► release "Fix checkout flow"
   │   ├─ wms:      release-cd.yml ──► wait ──┐
-  │   │            notify.yml     ──► wait ──┴─► release
-  │   └─ console:  release-cd.yml ─────────────► wait ──► release
+  │   │            notify.yml     ──► wait ──┴─► release "Fix checkout flow"
+  │   ├─ console:  release-cd.yml ─────────────► wait ──► release "Fix checkout flow"
+  │   └─ frontend: merge PR ──► (done, auto-deploys via Cloudflare)
   │
   └─ Step 2 (starts only after Step 1 fully completes)
-      └─ website:  release-cd.yml ─────────────► wait ──► release
+      └─ website:  release-cd.yml ─────────────► wait ──► release "Fix checkout flow"
 ```
 
 - Projects **within the same step** are triggered in parallel.
 - Workflows **within the same project** are also triggered in parallel (all fire simultaneously, wait for all to complete).
+- `mergeOnly` projects: merge PR only — no tag, no workflow, no release.
+- The provided release title is used as the GitHub Release name.
 - A failed workflow aborts the release for that project and blocks the next step.
 - Projects with no open PR labelled `production` (case-insensitive) are **skipped** and reported in Slack.
 
 ## Hotfix Flow (`/hotfix`)
 
 ```
-/hotfix <project-name>
+/hotfix <project-name> <release title>
 ```
 
 1. Looks up `<project-name>` in `config.projects`.
 2. Finds the most recently updated open PR labelled `hotfix` (case-insensitive).
-3. Triggers all of that project's workflows in parallel, waits for all to complete.
-4. Creates a GitHub Release on success.
+3. Merges the PR.
+4. If `mergeOnly: true` — stops here (auto-deploys externally).
+5. Creates a version tag on the merge commit.
+6. Triggers all of that project's workflows in parallel, waits for all to complete.
+7. Creates a GitHub Release with the provided release title on success.
 
 Example:
 ```
-/hotfix wms
+/hotfix wms Fix order sync bug
 ```
 
 ## Cloud Run Deploy Workflow
