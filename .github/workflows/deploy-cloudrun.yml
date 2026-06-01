@@ -25,6 +25,36 @@ jobs:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
+      - name: Build env vars file
+        run: |
+          python3 - <<'EOF'
+          import json, os
+
+          vars = {
+              "SLACK_SIGNING_SECRET": os.environ["SLACK_SIGNING_SECRET"],
+              "SLACK_BOT_TOKEN": os.environ["SLACK_BOT_TOKEN"],
+              "GITHUB_CLIENT_ID": os.environ["GH_CLIENT_ID"],
+              "GITHUB_CLIENT_SECRET": os.environ["GH_CLIENT_SECRET"],
+              "GCS_BUCKET_NAME": os.environ["GCS_BUCKET_NAME"],
+              "GCS_CONFIG_FILE_PATH": os.environ["GCS_CONFIG_FILE_PATH"],
+          }
+          deploy_config = os.environ.get("DEPLOY_CONFIG_JSON", "")
+          if deploy_config:
+              vars["DEPLOY_CONFIG_JSON"] = deploy_config
+
+          with open("/tmp/env-vars.yaml", "w") as f:
+              for k, v in vars.items():
+                  f.write(f"{k}: {json.dumps(v)}\n")
+          EOF
+        env:
+          SLACK_SIGNING_SECRET: ${{ secrets.SLACK_SIGNING_SECRET }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          GH_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
+          GH_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
+          GCS_BUCKET_NAME: ${{ vars.GCS_BUCKET_NAME }}
+          GCS_CONFIG_FILE_PATH: ${{ vars.GCS_CONFIG_FILE_PATH }}
+          DEPLOY_CONFIG_JSON: ${{ secrets.DEPLOY_CONFIG_JSON }}
+
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v3
         with:
@@ -36,22 +66,17 @@ jobs:
             --min-instances=0
             --max-instances=3
             --concurrency=10
-          env_vars: |
-            SLACK_SIGNING_SECRET=${{ secrets.SLACK_SIGNING_SECRET }}
-            SLACK_BOT_TOKEN=${{ secrets.SLACK_BOT_TOKEN }}
-            GITHUB_CLIENT_ID=${{ secrets.GH_CLIENT_ID }}
-            GITHUB_CLIENT_SECRET=${{ secrets.GH_CLIENT_SECRET }}
-            GCS_BUCKET_NAME=${{ vars.GCS_BUCKET_NAME }}
-            GCS_CONFIG_FILE_PATH=${{ vars.GCS_CONFIG_FILE_PATH }}
+            --env-vars-file=/tmp/env-vars.yaml
 
-      - name: Set DEPLOY_CONFIG_JSON
+      - name: Cleanup old revisions
         run: |
-          if [ -n "$DEPLOY_CONFIG_JSON" ]; then
-            gcloud run services update "$SERVICE" \
-              --region="$REGION" \
-              --update-env-vars="^||^DEPLOY_CONFIG_JSON=$DEPLOY_CONFIG_JSON"
-          fi
+          gcloud run revisions list \
+            --service "$SERVICE" \
+            --region "$REGION" \
+            --format="value(name)" \
+            --sort-by="~creationTimestamp" \
+          | tail -n +8 \
+          | xargs -r -I {} gcloud run revisions delete {} --region "$REGION" --quiet
         env:
           SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
           REGION: ${{ vars.GCP_REGION }}
-          DEPLOY_CONFIG_JSON: ${{ secrets.DEPLOY_CONFIG_JSON }}
