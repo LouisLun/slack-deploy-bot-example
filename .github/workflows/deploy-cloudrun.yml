@@ -38,9 +38,18 @@ jobs:
               "GCS_BUCKET_NAME": os.environ["GCS_BUCKET_NAME"],
               "GCS_CONFIG_FILE_PATH": os.environ["GCS_CONFIG_FILE_PATH"],
           }
-          deploy_config = os.environ.get("DEPLOY_CONFIG_JSON", "")
-          if deploy_config:
-              vars["DEPLOY_CONFIG_JSON"] = deploy_config
+
+          optional = {
+              "DEPLOY_CONFIG_JSON": "DEPLOY_CONFIG_JSON",
+              "GITHUB_AUTH_MODE": "GH_AUTH_MODE",
+              "GITHUB_APP_ID": "GH_APP_ID",
+              "GITHUB_PRIVATE_KEY": "GH_PRIVATE_KEY",
+              "GITHUB_INSTALLATION_ID": "GH_INSTALLATION_ID",
+          }
+          for cloud_key, env_key in optional.items():
+              val = os.environ.get(env_key, "")
+              if val:
+                  vars[cloud_key] = val
 
           with open("/tmp/env-vars.yaml", "w") as f:
               for k, v in vars.items():
@@ -54,6 +63,10 @@ jobs:
           GCS_BUCKET_NAME: ${{ vars.GCS_BUCKET_NAME }}
           GCS_CONFIG_FILE_PATH: ${{ vars.GCS_CONFIG_FILE_PATH }}
           DEPLOY_CONFIG_JSON: ${{ secrets.DEPLOY_CONFIG_JSON }}
+          GH_AUTH_MODE: ${{ secrets.GH_AUTH_MODE }}
+          GH_APP_ID: ${{ secrets.GH_APP_ID }}
+          GH_PRIVATE_KEY: ${{ secrets.GH_PRIVATE_KEY }}
+          GH_INSTALLATION_ID: ${{ secrets.GH_INSTALLATION_ID }}
 
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v3

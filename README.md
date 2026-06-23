@@ -13,8 +13,12 @@ GitHub Actions workflow for deploying [slack-deploy-bot](https://hub.docker.com/
 | `DEPLOY_CONFIG_JSON` | (optional) Full deploy config JSON string — overrides GCS when set |
 | `SLACK_SIGNING_SECRET` | Slack App signing secret |
 | `SLACK_BOT_TOKEN` | Slack Bot User OAuth Token (`xoxb-…`) |
-| `GH_CLIENT_ID` | GitHub OAuth App client ID |
-| `GH_CLIENT_SECRET` | GitHub OAuth App client secret |
+| `GH_CLIENT_ID` | GitHub App client ID (`oauth` mode) |
+| `GH_CLIENT_SECRET` | GitHub App client secret (`oauth` mode) |
+| `GH_AUTH_MODE` | Set to `app` to use bot identity instead of per-user OAuth (optional) |
+| `GH_APP_ID` | GitHub App ID (`app` mode) |
+| `GH_PRIVATE_KEY` | GitHub App private key PEM (`app` mode) |
+| `GH_INSTALLATION_ID` | GitHub App installation ID (`app` mode) |
 
 ### Variables
 
@@ -57,21 +61,28 @@ Click **Use this template** on GitHub to create your own repo.
 6. Copy `SLACK_SIGNING_SECRET` → **Basic Information** → App Credentials → Signing Secret.
 7. Copy `SLACK_BOT_TOKEN` → **OAuth & Permissions** → Bot User OAuth Token (`xoxb-…`).
 
-### 3. Create GitHub OAuth App
+### 3. Create GitHub App
 
-1. Go to **GitHub → Settings → Developer settings → OAuth Apps → New OAuth App**.
+1. Go to **GitHub → Settings → Developer settings → GitHub Apps → New GitHub App**.
 2. Fill in the fields (use placeholder URL for now, update in step 8):
 
    | Field | Value |
    |---|---|
-   | Application name | `slack-deploy-bot` (or any name) |
+   | GitHub App name | `slack-deploy-bot` (or any name) |
    | Homepage URL | `https://YOUR_CLOUD_RUN_URL` |
-   | Authorization callback URL | `https://YOUR_CLOUD_RUN_URL/auth/github/callback` |
+   | Callback URL | `https://YOUR_CLOUD_RUN_URL/auth/github/callback` |
+   | Webhook → Active | uncheck |
+   | Where can this GitHub App be installed? | Only on this account |
 
-3. Copy `GH_CLIENT_ID` → **Client ID** (shown on app page).
-4. Copy `GH_CLIENT_SECRET` → click **Generate a new client secret** → copy immediately (shown once only).
+3. Set **Repository permissions**: Actions (R/W), Contents (R/W), Metadata (R), Pull requests (R/W). All others: No access.
+4. Click **Create GitHub App**.
+5. Copy `GH_CLIENT_ID` → **Client ID** (shown on app page).
+6. Click **Generate a new client secret** → copy immediately → `GH_CLIENT_SECRET`.
+7. Go to **Install App** → Install on your account/org → select only the repos in your deploy config.
 
-> The bot authenticates users via GitHub OAuth to trigger workflows. The authenticated user must have **write access** to the target repos.
+> **`oauth` mode** (default): users authorize via GitHub before each deploy — API calls are made as the individual user.
+>
+> **`app` mode**: bot uses a GitHub App installation token — no per-user OAuth, API calls are made as the bot. Set `GH_AUTH_MODE=app` and provide `GH_APP_ID`, `GH_PRIVATE_KEY`, `GH_INSTALLATION_ID`.
 
 ### 4. Set up Google Cloud
 
@@ -152,8 +163,12 @@ Go to **repo → Settings → Secrets and variables → Actions**.
 | `WIF_SERVICE_ACCOUNT` | From step 4 |
 | `SLACK_SIGNING_SECRET` | From step 2 |
 | `SLACK_BOT_TOKEN` | From step 2 |
-| `GH_CLIENT_ID` | From step 3 |
-| `GH_CLIENT_SECRET` | From step 3 |
+| `GH_CLIENT_ID` | From step 3 (`oauth` mode) |
+| `GH_CLIENT_SECRET` | From step 3 (`oauth` mode) |
+| `GH_AUTH_MODE` | Set to `app` for bot identity mode (optional) |
+| `GH_APP_ID` | GitHub App ID (`app` mode) |
+| `GH_PRIVATE_KEY` | GitHub App private key PEM (`app` mode) |
+| `GH_INSTALLATION_ID` | GitHub App installation ID (`app` mode) |
 | `DEPLOY_CONFIG_JSON` | (optional) From step 5 Option B |
 
 **Variables:**
@@ -181,7 +196,7 @@ gcloud run services describe $CLOUD_RUN_SERVICE \
 Replace `YOUR_CLOUD_RUN_URL` placeholders from steps 2 and 3 with the actual URL:
 
 - **Slack** → [api.slack.com/apps](https://api.slack.com/apps) → your app → **Slash Commands** → edit each command → update Request URL.
-- **GitHub OAuth App** → **Settings → Developer settings → OAuth Apps** → your app → update Homepage URL and Authorization callback URL.
+- **GitHub App** → **Settings → Developer settings → GitHub Apps** → your app → update Homepage URL and Callback URL.
 
 ## deploy-config.json Format
 
